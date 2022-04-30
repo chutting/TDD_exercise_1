@@ -1,0 +1,38 @@
+import exception.IllegalOptionException;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+public class ArgTest {
+  //TODO: multi options
+  static record MultiOptions(@Option("l") boolean logging, @Option("p") int port, @Option("d") String dict) {}
+  @Test
+  public void shouldParseMultiOptions() {
+    MultiOptions options = Args.parse(MultiOptions.class, "-l", "-p", "8080", "-d", "/usr/doc");
+    assertTrue(options.logging());
+    assertEquals(options.port(), 8080);
+    assertEquals(options.dict(), "/usr/doc");
+  }
+
+  static record MultiOptionsWithoutAnnotation(@Option("l") boolean logging, int port, @Option("d") String dict) {}
+  @Test
+  public void shouldThrowIllegalOptionExceptionWhenAnnotationNotExisted() {
+    IllegalOptionException exception = assertThrows(IllegalOptionException.class, () -> {
+      Args.parse(MultiOptionsWithoutAnnotation.class, "-l", "-p", "8080", "-d", "/usr/doc");
+    });
+    assertEquals(exception.getMessage(), "port");
+  }
+
+  //TODO: multi list options'
+  //-g this is a list -d 1 2 -3 5
+//  @Disabled
+//  @Test
+//  public void shouldParseMultiListOption() {
+//    ListOptions options = Args.parse(ListOptions.class, "-g", "this", "is", "a", "list", "-d", "1", "2", "-3", "5");
+//    assertArrayEquals(new String[]{"this", "is", "a", "list"}, options.group());
+//    assertArrayEquals(new int[]{1, 2, -3, 5}, options.decimals());
+//  }
+//
+//  static record ListOptions(@Option("g") String[] group, @Option("d") int[] decimals) {}
+}
