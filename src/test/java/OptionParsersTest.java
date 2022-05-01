@@ -77,4 +77,13 @@ public class OptionParsersTest {
       assertFalse(OptionParsers.bool().parse(Arrays.asList(), option("l")));
     }
   }
+
+  @Nested
+  class ListOptionParser {
+    @Test
+    public void shouldParseListValue() {
+      String[] value = OptionParsers.list(String[]::new ,String::valueOf).parse(Arrays.asList("-g", "this", "is"), option("g"));
+      assertArrayEquals(new String[]{"this", "is"}, value);
+    }
+  }
 }
