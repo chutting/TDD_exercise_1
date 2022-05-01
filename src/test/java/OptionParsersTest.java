@@ -151,11 +151,21 @@ public class OptionParsersTest {
     }
 
     @Test
-    public void shouldSetDefaultValueToNull() {
+    public void shouldSetDefaultArrayIsEmpty() {
       MysqlConfiguration mysqlConfiguration = OptionParsers.classParser(MysqlConfiguration.class)
           .parse(Arrays.asList(), option("e"), "");
       assertNull(mysqlConfiguration.MYSQL_ALLOW_EMPTY_PASSWORD());
       assertNull(mysqlConfiguration.MYSQL_DATABASE());
+    }
+
+    @Test
+    public void shouldThrowInsufficientExceptionWhenValueNotExisted() {
+      InsufficientArgumentException exception = assertThrows(InsufficientArgumentException.class, () -> {
+        OptionParsers.classParser(MysqlConfiguration.class)
+            .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", "-e"),
+                option("e"), "");
+      });
+      assertEquals("e", exception.getMessage());
     }
   }
 }

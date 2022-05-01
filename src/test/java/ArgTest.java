@@ -39,4 +39,21 @@ public class ArgTest {
     assertArrayEquals(new String[]{"this", "is", "a", "list"}, options.group());
     assertArrayEquals(new Integer[]{1, 2, -3, 5}, options.decimals());
   }
+
+  static record MysqlConfiguration(Boolean MYSQL_ALLOW_EMPTY_PASSWORD, String MYSQL_DATABASE) {}
+  static record Student(String name, int age) {}
+  static record MultiClassOptions(@Option("e") MysqlConfiguration mysql, @Option("s") Student student) {}
+  @Test
+  public void shouldParseMultiClassOptions() {
+    MultiClassOptions options = Args.parse(
+        MultiClassOptions.class,
+        "-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", "-e", "MYSQL_DATABASE=test",
+        "-s", "name=chutt", "--student", "age=20");
+    MysqlConfiguration mysql = options.mysql();
+    Student student = options.student();
+    assertEquals(true, mysql.MYSQL_ALLOW_EMPTY_PASSWORD());
+    assertEquals("test", mysql.MYSQL_DATABASE());
+    assertEquals("chutt", student.name());
+    assertEquals(20, student.age());
+  }
 }

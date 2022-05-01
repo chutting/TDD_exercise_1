@@ -1,4 +1,5 @@
 import exception.IllegalOptionException;
+import utils.Utils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
@@ -24,16 +25,19 @@ public class Args {
 
   private static Object parseOption(List<String> arguments, Parameter parameter) {
     if (!parameter.isAnnotationPresent(Option.class)) throw new IllegalOptionException(parameter.getName());
+    Boolean isCustomClass = !parameter.getType().isPrimitive() && !parameter.getType().getName().contains("java.lang");
 
-    return PARSERS.get(parameter.getType()).parse(arguments, parameter.getAnnotation(Option.class), parameter.getName());
+    ObjectParser objectParser = isCustomClass ? OptionParsers.classParser(parameter.getType()) : PARSERS.get(parameter.getType());
+
+    return objectParser.parse(arguments, parameter.getAnnotation(Option.class), parameter.getName());
   }
 
   private static Map<Class<?>, ObjectParser> PARSERS = Map.of(
       boolean.class, OptionParsers.bool(),
-      int.class, OptionParsers.unary(Integer::parseInt, 0),
-      String.class, OptionParsers.unary(String::valueOf, ""),
-      String[].class, OptionParsers.list(String[]::new, String::valueOf),
-      Integer[].class, OptionParsers.list(Integer[]::new, Integer::parseInt)
+      int.class, OptionParsers.unary(Utils.classFunctionMap.get(Integer.class), 0),
+      String.class, OptionParsers.unary(Utils.classFunctionMap.get(String.class), ""),
+      String[].class, OptionParsers.list(String[]::new, Utils.classFunctionMap.get(String.class)),
+      Integer[].class, OptionParsers.list(Integer[]::new, Utils.classFunctionMap.get(Integer.class))
   );
 
 }
