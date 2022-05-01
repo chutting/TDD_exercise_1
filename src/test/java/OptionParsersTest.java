@@ -1,14 +1,17 @@
+import exception.IllegalOptionException;
 import exception.InsufficientArgumentException;
 import exception.TooManyArgumentsException;
-import org.junit.Test;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.awt.*;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class OptionParsersTest {
@@ -82,8 +85,32 @@ public class OptionParsersTest {
   class ListOptionParser {
     @Test
     public void shouldParseListValue() {
-      String[] value = OptionParsers.list(String[]::new ,String::valueOf).parse(Arrays.asList("-g", "this", "is"), option("g"));
+      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList("-g", "this", "is"), option("g"));
       assertArrayEquals(new String[]{"this", "is"}, value);
+    }
+
+    @Test
+    public void shouldSetDefaultValueToEmptyArray() {
+      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList("-g"), option("g"));
+      assertEquals(0, value.length);
+    }
+
+    @Test
+    public void shouldNotTreatNegativeIntAsFlag() {
+      Integer[] value = OptionParsers.list(Integer[]::new, Integer::parseInt).parse(Arrays.asList("-g", "-1", "2"), option("g"));
+      assertArrayEquals(new Integer[]{-1, 2}, value);
+    }
+
+    @Test
+    public void shouldThrowIllegalExceptionWhenParserThrowException() {
+      Function<String, String> parser = (it) -> {
+        throw new RuntimeException();
+      };
+      IllegalOptionException exception = assertThrows(IllegalOptionException.class, () -> {
+        OptionParsers.list(String[]::new, parser).parse(Arrays.asList("-g", "this", "is"), option("g"));
+      });
+      assertEquals(exception.getMessage(), "g");
+      assertEquals(exception.getValue(), "this");
     }
   }
 }
