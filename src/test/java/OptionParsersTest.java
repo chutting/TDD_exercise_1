@@ -6,11 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.awt.*;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,17 +28,22 @@ public class OptionParsersTest {
     };
   }
 
+  @Test
+  public void shouldParseValueWhenFlagNameWithDashExisted() {
+    assertEquals(OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList("--port", "8080"), option("p"), "port"), 8080);
+  }
+
   @Nested
   class UnaryOptionParserTest {
     @Test
     public void shouldParseValueIfExisted() {
-      assertEquals(OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList("-p", "8080"), option("p")), 8080);
+      assertEquals(OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList("-p", "8080"), option("p"), ""), 8080);
     }
 
     @Test
     public void shouldThrowTooManyExceptionWhenValueMoreThenOne() {
       TooManyArgumentsException exception = assertThrows(TooManyArgumentsException.class, () -> {
-        OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList("-p", "8080", "8081"), option("p"));
+        OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList("-p", "8080", "8081"), option("p"), "");
       });
       assertEquals(exception.getMessage(), "p");
     }
@@ -49,14 +52,14 @@ public class OptionParsersTest {
     @ValueSource(strings = {"-p", "-p -l"})
     public void shouldThrowInsufficientArgumentExceptionWhenValueIsNotPresent(String arguments) {
       InsufficientArgumentException exception = assertThrows(InsufficientArgumentException.class, () -> {
-        OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList(arguments.split(" ")), option("p"));
+        OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList(arguments.split(" ")), option("p"), "");
       });
       assertEquals(exception.getMessage(), "p");
     }
 
     @Test
     public void shouldSetDefaultValueTo0ForIntOption() {
-      assertEquals(OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList(), option("p")), 0);
+      assertEquals(OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList(), option("p"), ""), 0);
     }
   }
 
@@ -64,20 +67,20 @@ public class OptionParsersTest {
   class BooleanOptionParserTest {
     @Test
     public void shouldReturnTrueWhenLoggingIsPresent() {
-      assertTrue(OptionParsers.bool().parse(Arrays.asList("-l"), option("l")));
+      assertTrue(OptionParsers.bool().parse(Arrays.asList("-l"), option("l"), ""));
     }
 
     @Test
     public void shouldThrowTooManyExceptionWhenLoggingParamsExisted() {
       TooManyArgumentsException exception = assertThrows(TooManyArgumentsException.class, () -> {
-        OptionParsers.bool().parse(Arrays.asList("-l", "logging"), option("l"));
+        OptionParsers.bool().parse(Arrays.asList("-l", "logging"), option("l"), "");
       });
       assertEquals(exception.getMessage(), "l");
     }
 
     @Test
     public void shouldSetDefaultValueToFalse() {
-      assertFalse(OptionParsers.bool().parse(Arrays.asList(), option("l")));
+      assertFalse(OptionParsers.bool().parse(Arrays.asList(), option("l"), ""));
     }
   }
 
@@ -85,19 +88,19 @@ public class OptionParsersTest {
   class ListOptionParser {
     @Test
     public void shouldParseListValue() {
-      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList("-g", "this", "is"), option("g"));
+      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList("-g", "this", "is"), option("g"), "");
       assertArrayEquals(new String[]{"this", "is"}, value);
     }
 
     @Test
     public void shouldSetDefaultValueToEmptyArray() {
-      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList("-g"), option("g"));
+      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList("-g"), option("g"), "");
       assertEquals(0, value.length);
     }
 
     @Test
     public void shouldNotTreatNegativeIntAsFlag() {
-      Integer[] value = OptionParsers.list(Integer[]::new, Integer::parseInt).parse(Arrays.asList("-g", "-1", "2"), option("g"));
+      Integer[] value = OptionParsers.list(Integer[]::new, Integer::parseInt).parse(Arrays.asList("-g", "-1", "2"), option("g"), "");
       assertArrayEquals(new Integer[]{-1, 2}, value);
     }
 
@@ -107,7 +110,7 @@ public class OptionParsersTest {
         throw new RuntimeException();
       };
       IllegalOptionException exception = assertThrows(IllegalOptionException.class, () -> {
-        OptionParsers.list(String[]::new, parser).parse(Arrays.asList("-g", "this", "is"), option("g"));
+        OptionParsers.list(String[]::new, parser).parse(Arrays.asList("-g", "this", "is"), option("g"), "");
       });
       assertEquals(exception.getMessage(), "g");
       assertEquals(exception.getValue(), "this");
