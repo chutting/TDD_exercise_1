@@ -29,7 +29,7 @@ public class OptionParsersTest {
   }
 
   @Test
-  public void shouldParseValueWhenFlagNameWithDashExisted() {
+  public void shouldParseValueWhenParamNameWithDashExisted() {
     assertEquals(OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList("--port", "8080"), option("p"), "port"), 8080);
   }
 

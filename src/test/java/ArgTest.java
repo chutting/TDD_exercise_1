@@ -15,6 +15,14 @@ public class ArgTest {
     assertEquals(options.dict(), "/usr/doc");
   }
 
+  @Test
+  public void shouldParseMultiOptionsWithDashedParameterName() {
+    MultiOptions options = Args.parse(MultiOptions.class, "--logging", "--port", "8080", "--dict", "/usr/doc");
+    assertTrue(options.logging());
+    assertEquals(options.port(), 8080);
+    assertEquals(options.dict(), "/usr/doc");
+  }
+
   static record MultiOptionsWithoutAnnotation(@Option("l") boolean logging, int port, @Option("d") String dict) {}
   @Test
   public void shouldThrowIllegalOptionExceptionWhenAnnotationNotExisted() {
