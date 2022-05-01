@@ -30,7 +30,8 @@ public class OptionParsersTest {
 
   @Test
   public void shouldParseValueWhenParamNameWithDashExisted() {
-    assertEquals(OptionParsers.unary(Integer::parseInt, 0).parse(Arrays.asList("--port", "8080"), option("p"), "port"), 8080);
+    assertEquals(OptionParsers.unary(Integer::parseInt, 0)
+        .parse(Arrays.asList("--port", "8080"), option("p"), "port"), 8080);
   }
 
   @Nested
@@ -94,7 +95,7 @@ public class OptionParsersTest {
 
     @Test
     public void shouldSetDefaultValueToEmptyArray() {
-      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList("-g"), option("g"), "");
+      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(Arrays.asList(), option("g"), "");
       assertEquals(0, value.length);
     }
 
@@ -114,6 +115,47 @@ public class OptionParsersTest {
       });
       assertEquals(exception.getMessage(), "g");
       assertEquals(exception.getValue(), "this");
+    }
+  }
+
+  static record MysqlConfiguration(Boolean MYSQL_ALLOW_EMPTY_PASSWORD, String MYSQL_DATABASE) {}
+  @Nested
+  class ClassOptionParser {
+    @Test
+    public void shouldParserClassOption() {
+      MysqlConfiguration mysqlConfiguration = OptionParsers.classParser(MysqlConfiguration.class)
+          .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", "-e", "MYSQL_DATABASE=test"),
+              option("e"), "");
+      assertTrue(mysqlConfiguration.MYSQL_ALLOW_EMPTY_PASSWORD());
+      assertEquals("test", mysqlConfiguration.MYSQL_DATABASE());
+    }
+
+    @Test
+    public void shouldThrowIllegalOptionExceptionWhenValueNotContainsEqual() {
+      IllegalOptionException exception = assertThrows(IllegalOptionException.class, () -> {
+        OptionParsers.classParser(MysqlConfiguration.class)
+            .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORDyes", "-e", "MYSQL_DATABASE=test"),
+                option("e"), "");
+      });
+      assertEquals("MYSQL_ALLOW_EMPTY_PASSWORDyes", exception.getMessage());
+    }
+
+    @Test
+    public void shouldThrowTooManyExceptionWhenValueMoreThanOne() {
+      TooManyArgumentsException exception = assertThrows(TooManyArgumentsException.class, () -> {
+        OptionParsers.classParser(MysqlConfiguration.class)
+            .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORDyes", "MYSQL_DATABASE=test"),
+                option("e"), "");
+      });
+      assertEquals("e", exception.getMessage());
+    }
+
+    @Test
+    public void shouldSetDefaultValueToNull() {
+      MysqlConfiguration mysqlConfiguration = OptionParsers.classParser(MysqlConfiguration.class)
+          .parse(Arrays.asList(), option("e"), "");
+      assertNull(mysqlConfiguration.MYSQL_ALLOW_EMPTY_PASSWORD());
+      assertNull(mysqlConfiguration.MYSQL_DATABASE());
     }
   }
 }

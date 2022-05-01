@@ -2,10 +2,12 @@ import exception.IllegalOptionException;
 import exception.InsufficientArgumentException;
 import exception.TooManyArgumentsException;
 
-import java.util.List;
-import java.util.Optional;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Parameter;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class OptionParsers {
@@ -26,6 +28,71 @@ class OptionParsers {
     //valueParser：参数个体  向  不同类型的转换
     return (arguments, option, paramName) -> getCurrentOptionalValues(arguments, option, paramName)
         .map(it -> it.stream().map(value -> parseValue(valueParser, value, option)).toArray(generator)).orElse(generator.apply(0));
+  }
+
+  public static <T> ObjectParser<T> classParser(Class<T> generatorClass) {
+    return (arguments, option, paramName) -> {
+      int[] flagIndexList = IntStream.range(0, arguments.size())
+          .filter((it) -> arguments.get(it).equals("-" + option.value()) || arguments.get(it).equals("--" + paramName)).toArray();
+      try {
+        Constructor<?> constructor = generatorClass.getDeclaredConstructors()[0];
+        Parameter[] parameters = constructor.getParameters();
+
+        Map<String, Object> keyValueMap = Arrays.stream(flagIndexList)
+            .mapToObj(index -> {
+              List<String> currentOptionalValues = getCurrentOptionalValues(arguments, index);
+              System.out.println(currentOptionalValues.size() > 1);
+              if (currentOptionalValues.size() > 1) {
+                throw new TooManyArgumentsException(option.value());
+              }
+              List<String> keyValueList = Arrays.asList(currentOptionalValues.get(0).split("="));
+              if (keyValueList.size() == 1) {
+                throw new IllegalOptionException(keyValueList.get(0));
+              }
+              return keyValueList;
+            })
+            .filter(keyValueList -> getParameterByName(parameters, keyValueList.get(0)).isPresent())
+            .collect(Collectors.toMap(
+                keyValueList -> keyValueList.get(0),
+                keyValueList -> {
+                  String value = keyValueList.subList(1, keyValueList.size()).stream().collect(Collectors.joining("="));
+                  return parseValueOfClass(parameters, value, keyValueList.get(0));
+                }));
+        Object[] values = Arrays.stream(parameters).map((param) -> keyValueMap.get(param.getName())).toArray();
+        return (T) constructor.newInstance(values);
+      }catch (IllegalOptionException e) {
+        throw e;
+      }catch (TooManyArgumentsException e) {
+        throw e;
+      }catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    };
+  }
+
+  private static Object parseValueOfClass(Parameter[] parameters, String value, String key) {
+    Parameter parameter = getParameterByName(parameters, key).get();
+    try {
+      if (parameter.getType() == Boolean.class) {
+        Map<String, Boolean> stringBoolMap = Map.of(
+            "yes", true,
+            "true", true,
+            "no", false,
+            "false", false
+        );
+        return stringBoolMap.get(value);
+      }
+      if (parameter.getType() == Integer.class) {
+        return Integer.parseInt(value);
+      }
+      return value;
+    } catch(Exception e) {
+      throw new IllegalOptionException(key);
+    }
+  }
+
+  private static Optional<Parameter> getParameterByName(Parameter[] parameters, String name) {
+    return Arrays.stream(parameters).filter(parameter -> parameter.getName().equals(name)).findFirst();
   }
 
   private static <T> T parseValue(Function<String, T> valueParser, String value, Option option) {
