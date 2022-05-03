@@ -1,5 +1,7 @@
 package utils;
 
+import exception.IllegalOptionException;
+
 import java.util.Map;
 import java.util.function.Function;
 
@@ -15,10 +17,19 @@ public class Utils {
       int.class, Integer::parseInt,
       Integer.class, Integer::parseInt,
       String.class, String::valueOf,
-      Boolean.class, value -> stringBoolMap.get(value)
+      Boolean.class, value -> {
+        if (!stringBoolMap.containsKey(value)) throw new IllegalOptionException(value);
+        return stringBoolMap.get(value);
+      }
   );
 
   public static <T>T parseStringToObject(String value, Class<T> type) {
-    return (T) classFunctionMap.get(type).apply(value);
+    try {
+      return (T) classFunctionMap.get(type).apply(value);
+    } catch (IllegalOptionException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new IllegalOptionException(e.getMessage());
+    }
   }
 }

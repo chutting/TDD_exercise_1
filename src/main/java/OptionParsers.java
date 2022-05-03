@@ -45,6 +45,7 @@ class OptionParsers {
       }catch (BaseException e) {
         throw e;
       } catch (Exception e) {
+        System.out.println(e);
         throw new RuntimeException(e);
       }
     };

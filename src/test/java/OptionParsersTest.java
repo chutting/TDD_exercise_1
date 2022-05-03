@@ -144,7 +144,7 @@ public class OptionParsersTest {
     public void shouldThrowTooManyExceptionWhenValueMoreThanOne() {
       TooManyArgumentsException exception = assertThrows(TooManyArgumentsException.class, () -> {
         OptionParsers.classParser(MysqlConfiguration.class)
-            .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORDyes", "MYSQL_DATABASE=test"),
+            .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", "MYSQL_DATABASE=test"),
                 option("e"), "");
       });
       assertEquals("e", exception.getMessage());
@@ -166,6 +166,24 @@ public class OptionParsersTest {
                 option("e"), "");
       });
       assertEquals("e", exception.getMessage());
+    }
+
+    @Test
+    public void shouldSetDefaultValueWhenFieldNotExisted() {
+      MysqlConfiguration mysqlConfiguration = OptionParsers.classParser(MysqlConfiguration.class)
+          .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes"), option("e"), "");
+      assertTrue(mysqlConfiguration.MYSQL_ALLOW_EMPTY_PASSWORD());
+      assertNull(mysqlConfiguration.MYSQL_DATABASE());
+    }
+
+    @Test
+    public void shouldSetThrowIllegalExceptionWhenValueTypeNotRight() {
+      IllegalOptionException exception = assertThrows(IllegalOptionException.class, () -> {
+        OptionParsers.classParser(MysqlConfiguration.class)
+            .parse(Arrays.asList("-e", "MYSQL_ALLOW_EMPTY_PASSWORD=test"),
+                option("e"), "");
+      });
+      assertEquals("test", exception.getMessage());
     }
   }
 }
