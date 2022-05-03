@@ -25,11 +25,14 @@ public class Args {
 
   private static Object parseOption(List<String> arguments, Parameter parameter) {
     if (!parameter.isAnnotationPresent(Option.class)) throw new IllegalOptionException(parameter.getName());
+
+    return getObjectParser(parameter).parse(arguments, parameter.getAnnotation(Option.class), parameter.getName());
+  }
+
+  private static ObjectParser getObjectParser(Parameter parameter) {
     Boolean isCustomClass = !parameter.getType().isPrimitive() && !parameter.getType().getName().contains("java.lang");
 
-    ObjectParser objectParser = isCustomClass ? OptionParsers.classParser(parameter.getType()) : PARSERS.get(parameter.getType());
-
-    return objectParser.parse(arguments, parameter.getAnnotation(Option.class), parameter.getName());
+    return isCustomClass ? OptionParsers.classParser(parameter.getType()) : PARSERS.get(parameter.getType());
   }
 
   private static Map<Class<?>, ObjectParser> PARSERS = Map.of(
@@ -39,5 +42,4 @@ public class Args {
       String[].class, OptionParsers.list(String[]::new, Utils.classFunctionMap.get(String.class)),
       Integer[].class, OptionParsers.list(Integer[]::new, Utils.classFunctionMap.get(Integer.class))
   );
-
 }
