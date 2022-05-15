@@ -3,6 +3,7 @@ import exception.IllegalOptionException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,8 +12,8 @@ public class Args {
     try {
       Constructor<?> constructor = optionsClass.getDeclaredConstructors()[0];
       List<String> arguments = Arrays.asList(args);
-
-      Object[] values = Arrays.stream(constructor.getParameters()).map((param) -> parseOption(arguments, param)).toArray();
+      Parameter[] parameters = constructor.getParameters();
+      Object[] values = parseOptions(parameters, arguments);
 
       return (T) constructor.newInstance(values);
     } catch (IllegalOptionException e) {
@@ -22,10 +23,27 @@ public class Args {
     }
   }
 
-  private static Object parseOption(List<String> arguments, Parameter parameter) {
-    if (!parameter.isAnnotationPresent(Option.class)) throw new IllegalOptionException(parameter.getName());
+  private static Object[] parseOptions(Parameter[] parameters, List<String> arguments) {
+    return Arrays.stream(parameters).map((param) -> {
+      if (!param.isAnnotationPresent(Option.class)) throw new IllegalOptionException(param.getName());
 
-    return PARSERS.get(parameter.getType()).parse(arguments, parameter.getAnnotation(Option.class));
+      Option option = param.getAnnotation(Option.class);
+      if (option.value().equals("h")) return parse(parameters);
+
+      return PARSERS.get(param.getType()).parse(arguments, option);
+    }).toArray();
+  }
+
+  public static Map<String, String> parse(Parameter[] parameters) {
+    Map<String, String> helpTextMap = new HashMap<>();
+
+    Arrays.stream(parameters).forEach((it) -> {
+      if (!it.isAnnotationPresent(Option.class)) throw new IllegalOptionException(it.getName());
+      Option option = it.getAnnotation(Option.class);
+      helpTextMap.put("-" + option.value(), option.fullName());
+    });
+
+    return helpTextMap;
   }
 
   private static Map<Class<?>, ObjectParser> PARSERS = Map.of(

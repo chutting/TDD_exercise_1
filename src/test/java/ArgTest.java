@@ -1,23 +1,62 @@
 import exception.IllegalOptionException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ArgTest {
+  private PrintStream originalSystemOut;
+  private ByteArrayOutputStream systemOutContent;
+
+  @BeforeEach
+  void redirectSystemOutStream() {
+
+    originalSystemOut = System.out;
+
+    systemOutContent = new ByteArrayOutputStream();
+    System.setOut(new PrintStream(systemOutContent));
+  }
+
+  @AfterEach
+  void restoreSystemOutStream() {
+    System.setOut(originalSystemOut);
+  }
 
   static record MultiOptions(@Option(value = "l", fullName = "logging") boolean logging,
                              @Option(value = "p", fullName = "port") int port,
                              @Option(value = "d", fullName = "dict") String dict,
                              @Option(value = "e") String[] params,
-                             @Option("g") String[] group,
-                             @Option("dc") Integer[] decimals) {}
+                             @Option(value = "g", fullName = "group") String[] group,
+                             @Option(value = "dc", fullName = "decimals") Integer[] decimals,
+                             @Option(value = "h", fullName = "helpText") Map<String, String> help ) {}
   @Test
   public void shouldParseMultiOptions() {
     MultiOptions options = Args.parse(MultiOptions.class, "-l", "-p", "8080", "-d", "/usr/doc");
     assertTrue(options.logging());
     assertEquals(options.port(), 8080);
     assertEquals(options.dict(), "/usr/doc");
+  }
+
+  @Test
+  public void shouldParseHelpTextOptions() {
+    MultiOptions options = Args.parse(MultiOptions.class, "-h -l");
+    assertEquals(Map.of("-l", "logging",
+                    "-p", "port",
+                    "-d", "dict",
+                    "-e", "",
+                    "-g", "group",
+                    "-dc", "decimals",
+                    "-h", "helpText"),
+            options.help());
   }
 
   @Test
