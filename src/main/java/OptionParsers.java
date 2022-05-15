@@ -2,6 +2,8 @@ import exception.IllegalOptionException;
 import exception.InsufficientArgumentException;
 import exception.TooManyArgumentsException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -22,8 +24,6 @@ class OptionParsers {
   }
 
   public static <T> ObjectParser<T[]> list (IntFunction<T[]> generator, Function<String, T> valueParser) {
-    //generator: 是参数数组 向 最后结果的转换
-    //valueParser：参数个体  向  不同类型的转换
     return (arguments, option) -> getCurrentOptionalValues(arguments, option)
         .map(it -> it.stream().map(value -> parseValue(valueParser, value, option)).toArray(generator)).orElse(generator.apply(0));
   }
@@ -37,8 +37,21 @@ class OptionParsers {
   }
 
   private static Optional<List<String>> getCurrentOptionalValues(List<String> arguments, Option option) {
-    int index = Math.max(arguments.indexOf("-" + option.value()), arguments.indexOf("--" + option.fullName()));
-    return Optional.ofNullable(index == -1 ? null : getCurrentOptionalValues(arguments, index));
+    int[] flagIndexArray = IntStream.range(0, arguments.size())
+            .filter((it) -> arguments.get(it).equals("-" + option.value()) || arguments.get(it).equals("--" + option.fullName()))
+            .toArray();
+
+    if (flagIndexArray.length == 0) {
+      return Optional.empty();
+    }
+
+    List<String> optionValues = new ArrayList<>();
+
+    Arrays.stream(flagIndexArray).forEach((it) -> {
+      List<String> partialValues = getCurrentOptionalValues(arguments, it);
+      optionValues.addAll(partialValues);
+    });
+    return Optional.of(optionValues);
   }
 
   private static Optional<List<String>> getCurrentOptionalValuesWithExpectedSize(List<String> arguments, Option option, int expectedSize) {

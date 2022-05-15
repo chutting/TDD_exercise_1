@@ -8,7 +8,10 @@ public class ArgTest {
 
   static record MultiOptions(@Option(value = "l", fullName = "logging") boolean logging,
                              @Option(value = "p", fullName = "port") int port,
-                             @Option(value = "d", fullName = "dict") String dict) {}
+                             @Option(value = "d", fullName = "dict") String dict,
+                             @Option(value = "e") String[] params,
+                             @Option("g") String[] group,
+                             @Option("dc") Integer[] decimals) {}
   @Test
   public void shouldParseMultiOptions() {
     MultiOptions options = Args.parse(MultiOptions.class, "-l", "-p", "8080", "-d", "/usr/doc");
@@ -34,11 +37,19 @@ public class ArgTest {
     assertEquals(exception.getMessage(), "port");
   }
 
-  static record ListOptions(@Option("g") String[] group, @Option("d") Integer[] decimals) {}
   @Test
   public void shouldParseMultiListOption() {
-    ListOptions options = Args.parse(ListOptions.class, "-g", "this", "is", "a", "list", "-d", "1", "2", "-3", "5");
+    MultiOptions options = Args.parse(MultiOptions.class, "-g", "this", "is", "a", "list", "-dc", "1", "2", "-3", "5");
     assertArrayEquals(new String[]{"this", "is", "a", "list"}, options.group());
     assertArrayEquals(new Integer[]{1, 2, -3, 5}, options.decimals());
+  }
+
+  @Test
+  public void shouldParseDuplicatedFlagOptions() {
+    MultiOptions options = Args.parse(
+            MultiOptions.class,
+            "-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", "-e", "MYSQL_DATABASE=test", "-g", "this", "is", "a", "list");
+    assertArrayEquals(new String[]{"MYSQL_ALLOW_EMPTY_PASSWORD=yes", "MYSQL_DATABASE=test"}, options.params());
+    assertArrayEquals(new String[]{"this", "is", "a", "list"}, options.group());
   }
 }

@@ -98,6 +98,18 @@ public class OptionParsersTest {
     }
 
     @Test
+    public void shouldParseDuplicatedFlagValue() {
+      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(List.of("-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", "-e", "MYSQL_DATABASE=test"), option("e", ""));
+      assertArrayEquals(new String[]{"MYSQL_ALLOW_EMPTY_PASSWORD=yes", "MYSQL_DATABASE=test"}, value);
+    }
+
+    @Test
+    public void shouldReturnEmptyArrayAsDefault() {
+      String[] value = OptionParsers.list(String[]::new, String::valueOf).parse(List.of(), option("e", ""));
+      assertArrayEquals(new String[]{}, value);
+    }
+
+    @Test
     public void shouldNotTreatNegativeIntAsFlag() {
       Integer[] value = OptionParsers.list(Integer[]::new, Integer::parseInt).parse(Arrays.asList("-g", "-1", "2"), option("g", "group"));
       assertArrayEquals(new Integer[]{-1, 2}, value);
