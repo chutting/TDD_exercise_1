@@ -25,7 +25,7 @@ public class Args {
   private static Object parseOption(List<String> arguments, Parameter parameter) {
     if (!parameter.isAnnotationPresent(Option.class)) throw new IllegalOptionException(parameter.getName());
 
-    return PARSERS.get(parameter.getType()).parse(arguments, parameter.getAnnotation(Option.class), parameter.getName());
+    return PARSERS.get(parameter.getType()).parse(arguments, parameter.getAnnotation(Option.class));
   }
 
   private static Map<Class<?>, ObjectParser> PARSERS = Map.of(

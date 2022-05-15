@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ArgTest {
 
-  static record MultiOptions(@Option("l") boolean logging, @Option("p") int port, @Option("d") String dict) {}
+  static record MultiOptions(@Option(value = "l", fullName = "logging") boolean logging,
+                             @Option(value = "p", fullName = "port") int port,
+                             @Option(value = "d", fullName = "dict") String dict) {}
   @Test
   public void shouldParseMultiOptions() {
     MultiOptions options = Args.parse(MultiOptions.class, "-l", "-p", "8080", "-d", "/usr/doc");

@@ -7,4 +7,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Option {
   String value();
+  String fullName() default "";
 }
